@@ -11,8 +11,8 @@ export const apiConfig = {
     addToCart: '/api/cart',
     updateCartItem: (itemId) => `/api/cart/${itemId}`,
     removeCartItem: (itemId) => `/api/cart/${itemId}`,
-    orders: '/api/orders',
-    userOrders: (sessionId) => `/api/orders/${sessionId}`
+    orders: '/api/orders'
+    // Removed: userOrders (not needed for open MVP)
   }
 };
 

@@ -30,11 +30,14 @@ const ItemUploader = ({ onProductUpload }) => {
     setMessage(null);
 
     try {
-      await axios.post(buildApiUrl('/api/upload-item'), {
-        ...formData,
-        price: parseFloat(formData.price),
-        stock: parseInt(formData.stock, 10)
-      });
+      await axios.post(
+        buildApiUrl('/api/upload-item'),
+        {
+          ...formData,
+          price: parseFloat(formData.price),
+          stock: parseInt(formData.stock, 10)
+        }
+      );
 
       setMessage('Item uploaded successfully!');
       setFormData({
@@ -130,5 +133,4 @@ const ItemUploader = ({ onProductUpload }) => {
   );
 };
 
-// ✅ Fix: Make sure this line exists
 export default ItemUploader;

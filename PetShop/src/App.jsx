@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import ItemUploader from './components/ItemUploader';
 import ItemProductList from './components/ItemProductList';
 import Cart from './components/Cart';
 import Checkout from './components/Checkout';
+import Dashboard from './components/Dashboard';
+import ProductDetail from './components/ProductDetail';
 import { getSessionId } from './utils/sessionId';
 import { buildApiUrl } from './config/api';
-import { addToMockCart, getMockCart } from './data/mockData';
 
 function App() {
   const [category, setCategory] = useState('');
@@ -24,6 +26,7 @@ function App() {
 
   useEffect(() => {
     fetchCartCount();
+    // eslint-disable-next-line
   }, [sessionId]);
 
   const fetchCartCount = async () => {
@@ -31,9 +34,8 @@ function App() {
       const response = await axios.get(buildApiUrl(`/api/cart/${sessionId}`));
       setCartItemCount(response.data.length);
     } catch (err) {
-      console.warn('Backend not available, using mock cart:', err.message);
-      const mockCart = getMockCart();
-      setCartItemCount(mockCart.length);
+      console.warn('Backend not available:', err.message);
+      setCartItemCount(0);
     }
   };
 
@@ -42,15 +44,13 @@ function App() {
       await axios.post(buildApiUrl('/api/cart'), {
         product_id: product.id,
         quantity: 1,
-        session_id: sessionId
+        session_id: sessionId,
       });
       fetchCartCount();
       alert(`${product.name} added to cart!`);
     } catch (err) {
-      console.warn('Backend not available, using mock cart:', err.message);
-      addToMockCart(product.id, 1);
-      fetchCartCount();
-      alert(`${product.name} added to cart!`);
+      console.warn('Failed to add to cart:', err.message);
+      alert('Failed to add item to cart.');
     }
   };
 
@@ -79,74 +79,98 @@ function App() {
   };
 
   const handleRefreshInventory = () => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((prev) => prev + 1);
     setShowUploader(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header
-        onSearch={handleSearch}
-        onCategoryChange={handleCategoryChange}
-        cartItemCount={cartItemCount}
-        onCartClick={handleCartClick}
-        onAddProductClick={() => setShowUploader(true)} // ✅ pass the modal trigger
-      />
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6 mt-6">
-          {category && (
-            <p className="text-lg text-gray-600">
-              Category: <span className="font-semibold">{category}</span>
-            </p>
-          )}
-          {searchTerm && (
-            <p className="text-lg text-gray-600">
-              Search results for: <span className="font-semibold">"{searchTerm}"</span>
-            </p>
-          )}
-        </div>
-
-        <ItemProductList
-          key={refreshKey}
-          category={category}
-          searchTerm={searchTerm}
-          onAddToCart={handleAddToCart}
+    <BrowserRouter>
+      <div className="min-h-screen bg-gradient-to-br from-purple-300 via-indigo-200 to-pink-200">
+        <Header
+          onSearch={handleSearch}
+          onCategoryChange={handleCategoryChange}
+          cartItemCount={cartItemCount}
+          onCartClick={handleCartClick}
+          onAddProductClick={() => setShowUploader(true)}
         />
-      </main>
 
-      {showCart && (
-        <Cart
-          sessionId={sessionId}
-          onClose={handleCloseCart}
-          onCheckout={handleCheckout}
-        />
-      )}
+        <main className="container mx-auto px-4 py-8 relative z-10">
+          <Routes>
+            {/* Redirect '/' and all unknown routes to '/shop' */}
+            <Route path="/" element={<Navigate to="/shop" replace />} />
+            <Route path="*" element={<Navigate to="/shop" replace />} />
 
-      {showCheckout && (
-        <Checkout
-          cartItems={cartItems}
-          totalPrice={totalPrice}
-          sessionId={sessionId}
-          onClose={handleCloseCheckout}
-          onOrderComplete={handleOrderComplete}
-        />
-      )}
+            {/* Home page */}
+            <Route
+              path="/shop"
+              element={
+                <>
+                  <div className="mb-6 mt-6">
+                    {category && (
+                      <p className="text-lg text-white/90 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl inline-block">
+                        Category: <span className="font-semibold text-yellow-200">{category}</span>
+                      </p>
+                    )}
+                    {searchTerm && (
+                      <p className="text-lg text-white/90 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl inline-block">
+                        Search results for: <span className="font-semibold text-yellow-200">"{searchTerm}"</span>
+                      </p>
+                    )}
+                  </div>
 
-      {showUploader && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6 relative">
-            <button
-              onClick={() => setShowUploader(false)}
-              className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl"
-            >
-              &times;
-            </button>
-            <ItemUploader onProductUpload={handleRefreshInventory} />
+                  <ItemProductList
+                    key={refreshKey}
+                    category={category}
+                    searchTerm={searchTerm}
+                    onAddToCart={handleAddToCart}
+                  />
+                </>
+              }
+            />
+
+            {/* Dashboard page */}
+            <Route path="/shop/dashboard" element={<Dashboard />} />
+            
+            {/* Product Detail page */}
+            <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/shop/products/:id" element={<ProductDetail />} />
+            {/* Add more shop subroutes as needed */}
+          </Routes>
+        </main>
+
+        {showCart && (
+          <Cart
+            sessionId={sessionId}
+            onClose={handleCloseCart}
+            onCheckout={handleCheckout}
+          />
+        )}
+
+        {showCheckout && (
+          <Checkout
+            cartItems={cartItems}
+            totalPrice={totalPrice}
+            sessionId={sessionId}
+            onClose={handleCloseCheckout}
+            onOrderComplete={handleOrderComplete}
+          />
+        )}
+
+        {showUploader && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full p-6 relative">
+              <button
+                onClick={() => setShowUploader(false)}
+                className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl"
+              >
+                &times;
+              </button>
+              <ItemUploader onProductUpload={handleRefreshInventory} />
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </BrowserRouter>
   );
 }
 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
-import { mockProducts } from '../data/mockData';
 
 const ProductList = ({ category, searchTerm, onAddToCart }) => {
   const [products, setProducts] = useState([]);
@@ -10,6 +9,7 @@ const ProductList = ({ category, searchTerm, onAddToCart }) => {
 
   useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line
   }, [category, searchTerm]);
 
   const fetchProducts = async () => {
@@ -20,32 +20,19 @@ const ProductList = ({ category, searchTerm, onAddToCart }) => {
       if (searchTerm) params.search = searchTerm;
 
       const response = await axios.get(buildApiUrl('/api/products'), { params });
-      setProducts(response.data.products);
+      setProducts(response.data.products || []);
       setError(null);
     } catch (err) {
-      console.warn('Backend not available, using mock data:', err.message);
-
-      // Fallback to mock data
-      let filteredProducts = mockProducts;
-
-      if (category) {
-        filteredProducts = filteredProducts.filter(product =>
-          product.category === category
-        );
-      }
-
-      if (searchTerm) {
-        filteredProducts = filteredProducts.filter(product =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-
-      setProducts(filteredProducts);
-      setError(null);
+      console.error('Error fetching products:', err.message);
+      setProducts([]);
+      setError('Failed to load products from server.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddToCart = (product) => {
+    onAddToCart(product);
   };
 
   if (loading) {
@@ -60,6 +47,14 @@ const ProductList = ({ category, searchTerm, onAddToCart }) => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-red-500">{error}</div>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-500">No products available. Add a new one!</div>
       </div>
     );
   }
@@ -81,7 +76,7 @@ const ProductList = ({ category, searchTerm, onAddToCart }) => {
               <span className="text-sm text-gray-500">Stock: {product.stock}</span>
             </div>
             <button
-              onClick={() => onAddToCart(product)}
+              onClick={() => handleAddToCart(product)}
               disabled={product.stock === 0}
               className={`w-full mt-3 py-2 px-4 rounded-md font-medium transition-colors ${
                 product.stock === 0

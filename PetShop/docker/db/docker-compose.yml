@@ -1,0 +1,20 @@
+# docker/db/docker-compose.yml
+version: "3.9"
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: petshop-sqlite
+    volumes:
+      - sqlite_data:/data   # PERSISTENT data (not lost on rebuild)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sqlite3", "/data/petshop.db", "SELECT 1;"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  sqlite_data:

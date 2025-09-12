@@ -2,6 +2,8 @@ import { useState } from 'react';
 import ItemUploader from './ItemUploader';
 import ItemProductList from './ItemProductList';
 
+const SHOP_PATH = "/shop"; // Always treat /shop as home page
+
 const DynamicHome = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showUploader, setShowUploader] = useState(false);

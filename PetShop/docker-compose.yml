@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///mini_amazon.db
+    volumes:
+      - ./backend/instance:/app/instance
+    networks:
+      - petshop-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - petshop-network
+    restart: unless-stopped
+
+networks:
+  petshop-network:
+    driver: bridge
+
+volumes:
+  database:
+    driver: local
