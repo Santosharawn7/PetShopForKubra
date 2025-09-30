@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  petshop-db:
+    image: db-db
+    build:
+      context: ./docker/db
+      dockerfile: Dockerfile
+    container_name: petshop-sqlite
+    ports:
+      - "8080:8080"
+    volumes:
+      - sqlite_data:/data
+    environment:
+      - DB_NAME=petshop.db
+    networks:
+      - petshop-network
+    healthcheck:
+      test: ["CMD", "sqlite3", "/data/petshop.db", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  sqlite_data:
+    driver: local
+
+networks:
+  petshop-network:
+    driver: bridge

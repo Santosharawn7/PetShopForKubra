@@ -327,3 +327,6 @@ describe('Header', () => {
     expect(categorySelect).toBeInTheDocument()
   })
 })
+
+
+

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
 import { FaSearch, FaShoppingCart, FaPlus, FaChartBar, FaStore } from 'react-icons/fa';
 import { MdPets } from 'react-icons/md';
+import ModeToggle from './ModeToggle';
 
 const Header = ({
   onSearch,
@@ -10,9 +12,16 @@ const Header = ({
   cartItemCount,
   onCartClick,
   onAddProductClick,
+  mode,
+  onModeChange,
 }) => {
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState(['All Categories']);
+  
+  // Determine if we're on dashboard or shop page
+  const isDashboard = location.pathname.includes('/dashboard');
+  const isShop = location.pathname === '/shop' || location.pathname === '/';
 
   useEffect(() => {
     fetchCategories();
@@ -32,12 +41,30 @@ const Header = ({
     onSearch(searchTerm);
   };
 
+  // Dynamic header colors based on page and mode
+  const getHeaderColors = () => {
+    if (isDashboard) {
+      // Dashboard gets green colors for seller mode
+      return mode === 'seller' 
+        ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600'
+        : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600';
+    } else {
+      // Shop gets blue colors for buyer mode
+      return mode === 'buyer'
+        ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600'
+        : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600';
+    }
+  };
+
   return (
-    <header className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white shadow-2xl sticky top-0 z-40">
+    <header className={`${getHeaderColors()} text-white shadow-2xl sticky top-0 z-40`}>
       <div className="container mx-auto px-4 py-6">
         {/* Top row with logo, buttons */}
         <div className="flex items-center justify-between mb-6">
-          <a href="/shop" className="flex items-center gap-3 group">
+          <a 
+            href={mode === 'seller' ? "/shop/dashboard" : "/shop"} 
+            className="flex items-center gap-3 group"
+          >
             <div className="p-2 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
               <FaStore className="text-2xl" />
             </div>
@@ -45,19 +72,26 @@ const Header = ({
               <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
                 🐾 Pet Paradise Store
               </h1>
-              <p className="text-sm text-purple-100">Your one-stop pet shop</p>
+              <p className="text-sm text-purple-100">
+                {mode === 'seller' ? 'Your seller dashboard' : 'Your one-stop pet shop'}
+              </p>
             </div>
           </a>
           
           <div className="flex items-center gap-4">
-            {/* Add Product Button */}
-            <button
-              onClick={onAddProductClick}
-              className="group flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              <FaPlus className="text-lg group-hover:rotate-90 transition-transform duration-300" />
-              <span className="hidden sm:inline">Add Product</span>
-            </button>
+            {/* Mode Toggle */}
+            <ModeToggle mode={mode} onModeChange={onModeChange} />
+            
+            {/* Add Product Button - only show in seller mode or on dashboard */}
+            {(mode === 'seller' || isDashboard) && (
+              <button
+                onClick={onAddProductClick}
+                className="group flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                <FaPlus className="text-lg group-hover:rotate-90 transition-transform duration-300" />
+                <span className="hidden sm:inline">Add Product</span>
+              </button>
+            )}
             
             {/* Dashboard Button */}
             <a
@@ -65,22 +99,26 @@ const Header = ({
               className="group flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
               <FaChartBar className="text-lg group-hover:scale-110 transition-transform duration-300" />
-              <span className="hidden sm:inline">Dashboard</span>
+              <span className="hidden sm:inline">
+                {mode === 'seller' ? 'Dashboard' : 'Purchase History'}
+              </span>
             </a>
             
-            {/* Cart Button */}
-            <button
-              onClick={onCartClick}
-              className="group relative flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              <FaShoppingCart className="text-lg group-hover:scale-110 transition-transform duration-300" />
-              <span className="hidden sm:inline">Cart</span>
-              {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold animate-pulse">
-                  {cartItemCount}
-                </span>
-              )}
-            </button>
+            {/* Cart Button - only show in buyer mode or on shop page */}
+            {(mode === 'buyer' || isShop) && (
+              <button
+                onClick={onCartClick}
+                className="group relative flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                <FaShoppingCart className="text-lg group-hover:scale-110 transition-transform duration-300" />
+                <span className="hidden sm:inline">Cart</span>
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold animate-pulse">
+                    {cartItemCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
 

@@ -4,10 +4,10 @@ class Config:
     """Configuration class for the Pet Shop backend"""
     
     # Database configuration
-    # For Docker SQLite database - use absolute path
+    # For local development - use local database file
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL', 
-        'sqlite:////Users/santosharawn7/InventoryForPetApp/PetShop/docker/db/data/petshop.db'
+        'sqlite:///./petshop.db'
     )
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False

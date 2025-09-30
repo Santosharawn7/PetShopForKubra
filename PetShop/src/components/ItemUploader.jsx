@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, secureApi } from '../config/api';
+import SecureInput from './SecureInput';
 
 const ItemUploader = ({ onProductUpload }) => {
   const [formData, setFormData] = useState({
@@ -16,10 +17,10 @@ const ItemUploader = ({ onProductUpload }) => {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
+  const handleChange = (fieldName, value) => {
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [fieldName]: value
     }));
   };
 
@@ -63,57 +64,83 @@ const ItemUploader = ({ onProductUpload }) => {
       <h2 className="text-xl font-bold mb-4">Add New Product</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
+          <SecureInput
             type="text"
             name="name"
+            label="Product Name"
             value={formData.name}
-            onChange={handleChange}
-            placeholder="Product Name"
-            className="border p-2 rounded w-full"
+            onChange={(value) => handleChange('name', value)}
+            placeholder="Enter product name"
             required
+            validation={{
+              type: 'text',
+              maxLength: 100,
+              minLength: 2
+            }}
           />
-          <input
+          <SecureInput
             type="text"
             name="category"
+            label="Category"
             value={formData.category}
-            onChange={handleChange}
-            placeholder="Category"
-            className="border p-2 rounded w-full"
+            onChange={(value) => handleChange('category', value)}
+            placeholder="Enter category"
+            validation={{
+              type: 'text',
+              maxLength: 50
+            }}
           />
-          <input
+          <SecureInput
             type="number"
             name="price"
+            label="Price ($)"
             value={formData.price}
-            onChange={handleChange}
-            placeholder="Price"
-            className="border p-2 rounded w-full"
+            onChange={(value) => handleChange('price', value)}
+            placeholder="0.00"
             required
+            validation={{
+              type: 'price',
+              min: 0,
+              max: 999999.99
+            }}
           />
-          <input
+          <SecureInput
             type="number"
             name="stock"
+            label="Stock Quantity"
             value={formData.stock}
-            onChange={handleChange}
-            placeholder="Stock"
-            className="border p-2 rounded w-full"
+            onChange={(value) => handleChange('stock', value)}
+            placeholder="0"
             required
+            validation={{
+              type: 'stock',
+              min: 0,
+              max: 999999
+            }}
           />
         </div>
-        <input
-          type="text"
+        <SecureInput
+          type="url"
           name="image_url"
+          label="Image URL"
           value={formData.image_url}
-          onChange={handleChange}
-          placeholder="Image URL"
-          className="border p-2 rounded w-full"
+          onChange={(value) => handleChange('image_url', value)}
+          placeholder="https://example.com/image.jpg"
+          validation={{
+            type: 'url'
+          }}
         />
-        <textarea
+        <SecureInput
+          type="textarea"
           name="description"
+          label="Description"
           value={formData.description}
-          onChange={handleChange}
-          placeholder="Description"
-          className="border p-2 rounded w-full"
-          rows={3}
+          onChange={(value) => handleChange('description', value)}
+          placeholder="Enter product description"
+          validation={{
+            type: 'text',
+            maxLength: 1000
+          }}
         />
         <button
           type="submit"

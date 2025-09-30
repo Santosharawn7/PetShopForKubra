@@ -8,8 +8,9 @@ import Cart from './components/Cart';
 import Checkout from './components/Checkout';
 import Dashboard from './components/Dashboard';
 import ProductDetail from './components/ProductDetail';
+import ModeToggle from './components/ModeToggle';
 import { getSessionId } from './utils/sessionId';
-import { buildApiUrl } from './config/api';
+import { buildApiUrl, initializeSecurity, secureApi } from './config/api';
 
 function App() {
   const [category, setCategory] = useState('');
@@ -23,16 +24,22 @@ function App() {
   const [orderComplete, setOrderComplete] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showUploader, setShowUploader] = useState(false);
+  const [mode, setMode] = useState(() => {
+    const savedMode = localStorage.getItem('petShopMode');
+    return savedMode || 'buyer';
+  });
 
   useEffect(() => {
+    // Initialize security features
+    initializeSecurity();
     fetchCartCount();
     // eslint-disable-next-line
   }, [sessionId]);
 
   const fetchCartCount = async () => {
     try {
-      const response = await axios.get(buildApiUrl(`/api/cart/${sessionId}`));
-      setCartItemCount(response.data.length);
+      const cartItems = await secureApi.getCart(sessionId);
+      setCartItemCount(cartItems.length);
     } catch (err) {
       console.warn('Backend not available:', err.message);
       setCartItemCount(0);
@@ -41,11 +48,7 @@ function App() {
 
   const handleAddToCart = async (product) => {
     try {
-      await axios.post(buildApiUrl('/api/cart'), {
-        product_id: product.id,
-        quantity: 1,
-        session_id: sessionId,
-      });
+      await secureApi.addToCart(product.id, 1, sessionId);
       fetchCartCount();
       alert(`${product.name} added to cart!`);
     } catch (err) {
@@ -83,6 +86,11 @@ function App() {
     setShowUploader(false);
   };
 
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    localStorage.setItem('petShopMode', newMode);
+  };
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gradient-to-br from-purple-300 via-indigo-200 to-pink-200">
@@ -92,6 +100,8 @@ function App() {
           cartItemCount={cartItemCount}
           onCartClick={handleCartClick}
           onAddProductClick={() => setShowUploader(true)}
+          mode={mode}
+          onModeChange={handleModeChange}
         />
 
         <main className="container mx-auto px-4 py-8 relative z-10">
@@ -129,7 +139,7 @@ function App() {
             />
 
             {/* Dashboard page */}
-            <Route path="/shop/dashboard" element={<Dashboard />} />
+            <Route path="/shop/dashboard" element={<Dashboard mode={mode} />} />
             
             {/* Product Detail page */}
             <Route path="/products/:id" element={<ProductDetail />} />

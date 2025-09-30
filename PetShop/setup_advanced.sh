@@ -35,3 +35,6 @@ echo "  Backend: cd backend && python app.py"
 echo "  Frontend: npm run dev"
 echo ""
 echo "🌐 Access the app at: http://localhost:5173"
+
+
+

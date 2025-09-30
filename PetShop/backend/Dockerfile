@@ -35,3 +35,6 @@ ENV DATABASE_URL=sqlite:///mini_amazon.db
 
 # Run the application
 CMD ["python", "app.py"]
+
+
+

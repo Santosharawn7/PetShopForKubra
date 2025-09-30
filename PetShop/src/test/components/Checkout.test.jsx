@@ -392,3 +392,6 @@ describe('Checkout', () => {
     expect(screen.getByText('$69.97')).toBeInTheDocument()
   })
 })
+
+
+

@@ -79,3 +79,6 @@ CREATE INDEX IF NOT EXISTS idx_order_item_product_id ON order_item(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_rating_product_id ON product_rating(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_comment_product_id ON product_comment(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_comment_vote_comment_id ON product_comment_vote(comment_id);
+
+
+

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { buildApiUrl } from "../config/api";
+import { buildApiUrl, secureApi } from "../config/api";
 import { FaChartBar, FaShoppingCart, FaStar, FaComments, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { MdPets, MdTrendingUp, MdTrendingDown } from "react-icons/md";
 
-export default function Dashboard() {
+export default function Dashboard({ mode = 'seller' }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,14 +33,17 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(buildApiUrl("/api/admin/dashboard"));
-      setProducts(response.data);
+      const data = await secureApi.getDashboard();
+      setProducts(data);
       
       // Calculate stats
-      const totalProducts = response.data.length;
-      const totalSales = response.data.reduce((sum, p) => sum + p.sold, 0);
-      const totalRevenue = response.data.reduce((sum, p) => {
-        return sum + (p.buyers.reduce((buyerSum, buyer) => buyerSum + (buyer.price_paid * buyer.quantity), 0));
+      const totalProducts = data.length;
+      const totalSales = data.reduce((sum, p) => sum + (p.sold || 0), 0);
+      const totalRevenue = data.reduce((sum, p) => {
+        if (p.buyers && p.buyers.length > 0) {
+          return sum + (p.buyers.reduce((buyerSum, buyer) => buyerSum + (buyer.price_paid * buyer.quantity), 0));
+        }
+        return sum;
       }, 0);
       
       setStats({
@@ -174,61 +177,119 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                📊 Inventory Dashboard
+                {mode === 'seller' ? '📊 Dashboard' : '🛒 Purchase History'}
               </h1>
-              <p className="text-gray-600">Manage your pet product inventory and track sales</p>
+              <p className="text-gray-600">
+                {mode === 'seller' 
+                  ? 'Manage your pet product inventory and track sales' 
+                  : 'View your purchase history and favorite products'
+                }
+              </p>
             </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Products</p>
-                  <p className="text-3xl font-bold">{stats.totalProducts}</p>
+            {mode === 'seller' ? (
+              <>
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-sm font-medium">Total Products</p>
+                      <p className="text-3xl font-bold">{stats.totalProducts}</p>
+                    </div>
+                    <MdPets className="text-4xl text-blue-200" />
+                  </div>
                 </div>
-                <MdPets className="text-4xl text-blue-200" />
-              </div>
-            </div>
 
-            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Total Sales</p>
-                  <p className="text-3xl font-bold">{stats.totalSales}</p>
+                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm font-medium">Total Sales</p>
+                      <p className="text-3xl font-bold">{stats.totalSales}</p>
+                    </div>
+                    <FaShoppingCart className="text-4xl text-green-200" />
+                  </div>
                 </div>
-                <FaShoppingCart className="text-4xl text-green-200" />
-              </div>
-            </div>
 
-            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-100 text-sm font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
+                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-yellow-100 text-sm font-medium">Total Revenue</p>
+                      <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
+                    </div>
+                    <MdTrendingUp className="text-4xl text-yellow-200" />
+                  </div>
                 </div>
-                <MdTrendingUp className="text-4xl text-yellow-200" />
-              </div>
-            </div>
 
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Avg Sentiment</p>
-                  <p className="text-3xl font-bold">{stats.averageRating.toFixed(1)}</p>
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-sm font-medium">Avg Sentiment</p>
+                      <p className="text-3xl font-bold">{stats.averageRating.toFixed(1)}</p>
+                    </div>
+                    <FaStar className="text-4xl text-purple-200" />
+                  </div>
                 </div>
-                <FaStar className="text-4xl text-purple-200" />
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-sm font-medium">Orders Placed</p>
+                      <p className="text-3xl font-bold">0</p>
+                    </div>
+                    <FaShoppingCart className="text-4xl text-blue-200" />
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm font-medium">Total Spent</p>
+                      <p className="text-3xl font-bold">$0.00</p>
+                    </div>
+                    <MdTrendingUp className="text-4xl text-green-200" />
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-yellow-100 text-sm font-medium">Favorites</p>
+                      <p className="text-3xl font-bold">0</p>
+                    </div>
+                    <FaStar className="text-4xl text-yellow-200" />
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-sm font-medium">Reviews Given</p>
+                      <p className="text-3xl font-bold">0</p>
+                    </div>
+                    <FaComments className="text-4xl text-purple-200" />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Products Table */}
         <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-800">Product Inventory</h2>
-            <p className="text-gray-600">Click "View Buyers" to see detailed purchase information</p>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {mode === 'seller' ? 'Product Inventory' : 'Purchase History'}
+            </h2>
+            <p className="text-gray-600">
+              {mode === 'seller' 
+                ? 'Click "View Buyers" to see detailed purchase information' 
+                : 'View your past orders and favorite products'
+              }
+            </p>
           </div>
 
           <div className="overflow-x-auto">
@@ -238,18 +299,37 @@ export default function Dashboard() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Stock
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sold
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Revenue
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  {mode === 'seller' ? (
+                    <>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Stock
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Sold
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Revenue
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Quantity
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Paid
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -257,8 +337,18 @@ export default function Dashboard() {
                   <tr>
                     <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                       <MdPets className="text-6xl text-gray-300 mx-auto mb-4" />
-                      <p className="text-lg font-semibold">No products uploaded yet</p>
-                      <p className="text-sm">Upload your first product to get started!</p>
+                      <p className="text-lg font-semibold">
+                        {mode === 'seller' 
+                          ? 'No products uploaded yet' 
+                          : 'No purchase history yet'
+                        }
+                      </p>
+                      <p className="text-sm">
+                        {mode === 'seller' 
+                          ? 'Upload your first product to get started!' 
+                          : 'Start shopping to see your orders here!'
+                        }
+                      </p>
                     </td>
                   </tr>
                 ) : (
@@ -274,13 +364,13 @@ export default function Dashboard() {
                             <div className="flex items-center">
                               <img
                                 src={product.image_url || "https://via.placeholder.com/100x100?text=Product"}
-                                alt={product.title}
+                                alt={product.title || product.name}
                                 className="w-16 h-16 object-cover rounded-lg shadow-md"
                               />
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {product.title}
-                                </div>
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {product.title || product.name}
+                                        </div>
                                 <div className="text-sm text-gray-500">
                                   ID: {product.id}
                                 </div>
@@ -308,67 +398,94 @@ export default function Dashboard() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              product.stock === 0 
-                                ? 'bg-red-100 text-red-800' 
-                                : product.stock < 10 
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {product.stock}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <span className="text-sm font-medium text-gray-900">
-                                {product.sold}
-                              </span>
-                              {product.sold > 0 && (
-                                <MdTrendingUp className="ml-2 text-green-500" />
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm font-medium text-gray-900">
-                              ${productRevenue.toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => toggleDrawer(product.id)}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
-                              >
-                                {activeProductId === product.id ? "Hide Buyers" : "View Buyers"}
-                              </button>
-                              <button
-                                onClick={() => handleEditProduct(product)}
-                                className="text-green-600 hover:text-green-800 p-1 rounded transition-colors"
-                                title="Edit Product"
-                              >
-                                <FaEdit className="text-sm" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
-                                title="Delete Product"
-                              >
-                                <FaTrash className="text-sm" />
-                              </button>
-                            </div>
-                          </td>
+                          {mode === 'seller' ? (
+                            <>
+                              <td className="px-6 py-4">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  product.stock === 0 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : product.stock < 10 
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {product.stock}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {product.sold}
+                                  </span>
+                                  {product.sold > 0 && (
+                                    <MdTrendingUp className="ml-2 text-green-500" />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm font-medium text-gray-900">
+                                  ${productRevenue.toFixed(2)}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => toggleDrawer(product.id)}
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                                  >
+                                    {activeProductId === product.id ? "Hide Buyers" : "View Buyers"}
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditProduct(product)}
+                                    className="text-green-600 hover:text-green-800 p-1 rounded transition-colors"
+                                    title="Edit Product"
+                                  >
+                                    <FaEdit className="text-sm" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteProduct(product.id)}
+                                    className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
+                                    title="Delete Product"
+                                  >
+                                    <FaTrash className="text-sm" />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-6 py-4">
+                                <span className="text-sm text-gray-900">
+                                  {new Date().toLocaleDateString()}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm font-medium text-gray-900">
+                                  1
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm font-medium text-gray-900">
+                                  ${product.price || '0.00'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                  Completed
+                                </span>
+                              </td>
+                            </>
+                          )}
                         </tr>
                         
-                        {/* Expandable Buyers Row */}
-                        {activeProductId === product.id && (
+                        {/* Expandable Buyers Row - only for seller mode */}
+                        {activeProductId === product.id && mode === 'seller' && (
                           <tr>
                             <td colSpan="5" className="px-6 py-4 bg-gray-50">
                               <div className="bg-white rounded-lg shadow-sm border p-6">
-                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                  <FaComments className="text-blue-500" />
-                                  🧾 Buyers for {product.title}
-                                </h3>
+                                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                          <FaComments className="text-blue-500" />
+                                          🧾 Buyers for {product.title || product.name}
+                                        </h3>
                                 
                                 {product.buyers.length === 0 ? (
                                   <div className="text-center py-8 text-gray-500">

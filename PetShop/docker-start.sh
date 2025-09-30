@@ -33,3 +33,6 @@ else
     echo "❌ Failed to start application. Check logs with: docker-compose logs"
     exit 1
 fi
+
+
+
